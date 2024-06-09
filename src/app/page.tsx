@@ -11,14 +11,16 @@ import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-  } from "@/components/ui/popover"
+} from "@/components/ui/popover"
+import * as token from "@solana/spl-token";
+import { set } from '@coral-xyz/anchor/dist/cjs/utils/features';
 
 const WalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
     { ssr: false }
 );
 
-const PROGRAM_ID = new anchor.web3.PublicKey("GztZcTBZTcv5DUwY6dRWgzFL5WhcNZ8Wx8zRSoLniXZM");
+const PROGRAM_ID = new anchor.web3.PublicKey("8hkDLDXHJpXwEufzpUtWp5WhgVBvfoywcXApnpDXTEk2");
 
 interface IntroAccount {
     publicKey: anchor.web3.PublicKey,
@@ -34,6 +36,9 @@ export default function Home() {
 
     const { connection } = useConnection()
     const wallet = useAnchorWallet();
+
+    const [isMintInitialized, setIsMintInitialized] = useState(false)
+    const [tokenSupply, setTokenSupply] = useState<number>(0)
 
     const [newStudentName, setNewStudentName] = useState("");
     const [newStudentMessage, setNewStudentMessage] = useState("");
@@ -57,90 +62,126 @@ export default function Home() {
             const programToSet = new anchor.Program(idl as anchor.Idl, provider)
             setProgram(programToSet)
         }
-    }, [wallet])
+    }, [wallet]);
 
     useEffect(() => {
         fetchIntros()
-    }, [program])
+        fetchMint()
+    }, [program]);
 
-    const createIntro = () => {
-        const execute = async () => {
-            if (program && wallet) {
-                try {
-                    const [reviewPDA] = anchor.web3.PublicKey.findProgramAddressSync(
-                        [
-                            Buffer.from(newStudentName),
-                            wallet.publicKey.toBuffer()
-                        ],
-                        PROGRAM_ID
-                    );
-    
-                    await program.methods
-                        .addStudentIntro(
-                            newStudentName,
-                            newStudentMessage
-                        )
-                        .accounts({
-                            intro: reviewPDA
-                        })
-                        .rpc()
-
-                    fetchIntros()
-                    setNewStudentMessage("")
-                    setNewStudentName("")                    
-
-                } catch(e) {
-                    console.error(e)
-                } 
-            }
-        }
-        execute()
-    }
-
-    const fetchIntros = () => {
-        const execute = async () => {
-            if (program) {
-                try {
-                    const intros = await (program.account as any).introState.all();
-                    let accounts: IntroAccount[] = intros.map((data: any) => {
-                        return {
-                            publicKey: data.publicKey,
-                            account: {
-                                initializer: new anchor.web3.PublicKey(data.account.initializer),
-                                message: data.account.message,
-                                name: data.account.name
-                            }
-                        }
-                    })
-                    setStudentIntros(accounts)
-                } catch(e) {
-                    console.error(e)
-                }
-            }
-        }
-        execute()
-    }
-
-    const updateIntro = (intro: IntroAccount) => {
-        const execute = async () => {
+    const initializeMint = async () => {
+        if (program && wallet) {
             try {
-                if (program) {
-                    await program.methods.updateStudentIntro(
-                        intro.account.name,
-                        updatedMessage
-                    )
-                    .accounts({
-                        intro: intro.publicKey
-                    })
+                const tx = await program.methods
+                    .initializeMint()
                     .rpc()
-
-                    fetchIntros()
-                }
+    
+                console.log("initialized mint. tx: ", tx)
             } catch(e) {
                 console.error(e)
             }
         }
-        execute()
+    }
+
+    const createIntro = async () => {
+        if (program && wallet) {
+            try {
+
+                const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
+                    [
+                        Buffer.from("mint")
+                    ],
+                    PROGRAM_ID
+                );
+                const tokenAccount = await token.getAssociatedTokenAddress(
+                    mintAddress,
+                    wallet.publicKey,
+                );
+
+                const [reviewPDA] = anchor.web3.PublicKey.findProgramAddressSync(
+                    [
+                        Buffer.from(newStudentName),
+                        wallet.publicKey.toBuffer()
+                    ],
+                    PROGRAM_ID
+                );
+
+                await program.methods
+                    .addStudentIntro(
+                        newStudentName,
+                        newStudentMessage
+                    )
+                    .accounts({
+                        intro: reviewPDA,
+                        tokenAccount: tokenAccount
+                    })
+                    .rpc()
+
+                fetchIntros()
+                fetchMint()
+                setNewStudentMessage("")
+                setNewStudentName("")                    
+
+            } catch(e) {
+                console.error(e)
+            } 
+        }
+    }
+
+    const fetchIntros = async () => {
+        if (program) {
+            try {
+                const intros = await (program.account as any).introState.all();
+                let accounts: IntroAccount[] = intros.map((data: any) => {
+                    return {
+                        publicKey: data.publicKey,
+                        account: {
+                            initializer: new anchor.web3.PublicKey(data.account.initializer),
+                            message: data.account.message,
+                            name: data.account.name
+                        }
+                    }
+                })
+                setStudentIntros(accounts)
+            } catch(e) {
+                console.error(e)
+            }
+        }
+    }
+
+    const fetchMint = async () => {
+        const [mintAddress] = anchor.web3.PublicKey.findProgramAddressSync(
+            [
+                Buffer.from("mint")
+            ],
+            PROGRAM_ID
+        );
+        const mint = await token.getMint(
+            connection,
+            mintAddress
+        );
+
+        setIsMintInitialized(mint.isInitialized)
+        setTokenSupply(Number(mint.supply))
+    }
+
+    const updateIntro = async (intro: IntroAccount) => {
+        try {
+            if (program) {
+                await program.methods.updateStudentIntro(
+                    intro.account.name,
+                    updatedMessage
+                )
+                .accounts({
+                    intro: intro.publicKey
+                })
+                .rpc()
+
+                fetchIntros()
+            }
+        } catch(e) {
+            console.error(e)
+        }
     }
 
     const closeIntro = (intro: IntroAccount) => {
@@ -172,6 +213,22 @@ export default function Home() {
             <div className="fixed top-0 right-0 p-4">
                 <WalletMultiButtonDynamic />
             </div>
+            <Card className='w-[500px]'>
+                <CardHeader>
+                    <CardTitle>
+                        {isMintInitialized ? "Mint Supply:" : "Initialize Mint"}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {isMintInitialized ? (
+                        <p><strong>{tokenSupply}</strong></p>
+                    ) : (
+                        <Button className='w-full' onClick={() => initializeMint()}>
+                            Initialize
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
             <Card className='w-[500px]'>
                 <CardHeader>
                     <CardTitle>
@@ -219,10 +276,8 @@ export default function Home() {
                                 <div className='flex flex-row gap-x-2'>
                                     <Popover>
                                         <PopoverTrigger>
-                                            <Button>
                                                 Update
-                                            </Button>
-                                            </PopoverTrigger>
+                                        </PopoverTrigger>
                                         <PopoverContent className='flex flex-col gap-y-1'>
                                             New message:
                                             <Input

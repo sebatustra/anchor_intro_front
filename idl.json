@@ -1,5 +1,5 @@
 {
-    "address": "GztZcTBZTcv5DUwY6dRWgzFL5WhcNZ8Wx8zRSoLniXZM",
+    "address": "8hkDLDXHJpXwEufzpUtWp5WhgVBvfoywcXApnpDXTEk2",
     "metadata": {
       "name": "anchor_student_intro",
       "version": "0.1.0",
@@ -44,6 +44,39 @@
           {
             "name": "system_program",
             "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "reward_mint",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    109,
+                    105,
+                    110,
+                    116
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "token_account",
+            "writable": true
+          },
+          {
+            "name": "associated_token_program",
+            "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          },
+          {
+            "name": "rent",
+            "address": "SysvarRent111111111111111111111111111111111"
           }
         ],
         "args": [
@@ -98,6 +131,56 @@
             "type": "string"
           }
         ]
+      },
+      {
+        "name": "initialize_mint",
+        "discriminator": [
+          209,
+          42,
+          195,
+          4,
+          129,
+          85,
+          209,
+          44
+        ],
+        "accounts": [
+          {
+            "name": "reward_mint",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    109,
+                    105,
+                    110,
+                    116
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "initializer",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "rent",
+            "address": "SysvarRent111111111111111111111111111111111"
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          }
+        ],
+        "args": []
       },
       {
         "name": "update_student_intro",
@@ -163,6 +246,18 @@
           26,
           232
         ]
+      }
+    ],
+    "errors": [
+      {
+        "code": 6000,
+        "name": "InvalidName",
+        "msg": "Name must be between 1 and 20 characters"
+      },
+      {
+        "code": 6001,
+        "name": "InvalidMessage",
+        "msg": "Message must be between 1 and 50 characters"
       }
     ],
     "types": [
