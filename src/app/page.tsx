@@ -1,113 +1,252 @@
-import Image from "next/image";
+"use client"
+import dynamic from 'next/dynamic';
+import * as anchor from "@coral-xyz/anchor";
+import { useEffect, useState } from 'react';
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react"
+import idl from "../../idl.json"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+  } from "@/components/ui/popover"
+
+const WalletMultiButtonDynamic = dynamic(
+    async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
+    { ssr: false }
+);
+
+const PROGRAM_ID = new anchor.web3.PublicKey("GztZcTBZTcv5DUwY6dRWgzFL5WhcNZ8Wx8zRSoLniXZM");
+
+interface IntroAccount {
+    publicKey: anchor.web3.PublicKey,
+    account: {
+        initializer: anchor.web3.PublicKey,
+        name: string,
+        message: string
+    }
+}
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    const [program, setProgram] = useState<anchor.Program<anchor.Idl>>() 
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+    const { connection } = useConnection()
+    const wallet = useAnchorWallet();
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+    const [newStudentName, setNewStudentName] = useState("");
+    const [newStudentMessage, setNewStudentMessage] = useState("");
+    const [studentIntros, setStudentIntros] = useState<IntroAccount[]>([])
+    const [updatedMessage, setUpdatedMessage] = useState("")
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+    useEffect(() => {
+        if (wallet) {
+            let provider: anchor.Provider;
+    
+            try {
+                provider = anchor.getProvider()
+            } catch {
+                provider = new anchor.AnchorProvider(
+                    connection,
+                    wallet,
+                    anchor.AnchorProvider.defaultOptions()
+                )
+            }
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+            const programToSet = new anchor.Program(idl as anchor.Idl, provider)
+            setProgram(programToSet)
+        }
+    }, [wallet])
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+    useEffect(() => {
+        fetchIntros()
+    }, [program])
+
+    const createIntro = () => {
+        const execute = async () => {
+            if (program && wallet) {
+                try {
+                    const [reviewPDA] = anchor.web3.PublicKey.findProgramAddressSync(
+                        [
+                            Buffer.from(newStudentName),
+                            wallet.publicKey.toBuffer()
+                        ],
+                        PROGRAM_ID
+                    );
+    
+                    await program.methods
+                        .addStudentIntro(
+                            newStudentName,
+                            newStudentMessage
+                        )
+                        .accounts({
+                            intro: reviewPDA
+                        })
+                        .rpc()
+
+                    fetchIntros()
+                    setNewStudentMessage("")
+                    setNewStudentName("")                    
+
+                } catch(e) {
+                    console.error(e)
+                } 
+            }
+        }
+        execute()
+    }
+
+    const fetchIntros = () => {
+        const execute = async () => {
+            if (program) {
+                try {
+                    const intros = await (program.account as any).introState.all();
+                    let accounts: IntroAccount[] = intros.map((data: any) => {
+                        return {
+                            publicKey: data.publicKey,
+                            account: {
+                                initializer: new anchor.web3.PublicKey(data.account.initializer),
+                                message: data.account.message,
+                                name: data.account.name
+                            }
+                        }
+                    })
+                    setStudentIntros(accounts)
+                } catch(e) {
+                    console.error(e)
+                }
+            }
+        }
+        execute()
+    }
+
+    const updateIntro = (intro: IntroAccount) => {
+        const execute = async () => {
+            try {
+                if (program) {
+                    await program.methods.updateStudentIntro(
+                        intro.account.name,
+                        updatedMessage
+                    )
+                    .accounts({
+                        intro: intro.publicKey
+                    })
+                    .rpc()
+
+                    fetchIntros()
+                }
+            } catch(e) {
+                console.error(e)
+            }
+        }
+        execute()
+    }
+
+    const closeIntro = (intro: IntroAccount) => {
+        const execute = async () => {
+            try {
+                if (program) {
+                    await program.methods
+                        .closeStudentIntro(
+                            intro.account.name
+                        )
+                        .accounts({
+                            intro: intro.publicKey
+                        })
+                        .rpc()
+
+                    fetchIntros()
+                }
+            } catch(e) {
+                console.error(e)
+            }
+        }
+
+        execute()
+    }
+
+
+    return (
+        <main className="flex flex-col items-center p-10 min-h-screen gap-y-3">
+            <div className="fixed top-0 right-0 p-4">
+                <WalletMultiButtonDynamic />
+            </div>
+            <Card className='w-[500px]'>
+                <CardHeader>
+                    <CardTitle>
+                        New Student Intro
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className='flex flex-col gap-y-8'>
+                    <Input 
+                        className="w-full"
+                        placeholder="Student Name"
+                        onChange={(event) => setNewStudentName(event.target.value)}
+                        value={newStudentName}
+                    >
+                    </Input>
+                    <Input 
+                        className="w-full"
+                        placeholder="Student Message"
+                        onChange={(event) => setNewStudentMessage(event.target.value)}
+                        value={newStudentMessage}
+                    >
+                    </Input>
+                </CardContent>
+                <CardFooter>
+                    <Button 
+                        className='w-full'
+                        onClick={() => createIntro()}
+                    >
+                        Create
+                    </Button>
+                </CardFooter>
+            </Card>
+            <Card className='w-[600px]'>
+                <CardHeader className='flex flex-col w-full items-center'>
+                    <CardTitle className='mb-2'>
+                        List of Student Intros
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-y-2">
+                    {studentIntros.map(intro => (
+                        <Card>
+                            <CardContent className='flex flex-col w-full gap-y-1 p-2'>
+                                <p>Initializer: {intro.account.initializer.toString()}</p>
+                                <p>Student name: {intro.account.name}</p>
+                                <p>Student message: {intro.account.message}</p>
+                                <div className='flex flex-row gap-x-2'>
+                                    <Popover>
+                                        <PopoverTrigger>
+                                            <Button>
+                                                Update
+                                            </Button>
+                                            </PopoverTrigger>
+                                        <PopoverContent className='flex flex-col gap-y-1'>
+                                            New message:
+                                            <Input
+                                                value={updatedMessage}
+                                                onChange={(event) => setUpdatedMessage(event.target.value)}
+                                            />
+                                            <Button
+                                                onClick={() => updateIntro(intro)}
+                                            >
+                                                Submit
+                                            </Button>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <Button
+                                        onClick={() => closeIntro(intro)}
+                                    >
+                                        Close 
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </CardContent>
+            </Card>
+        </main>
+    );
 }
