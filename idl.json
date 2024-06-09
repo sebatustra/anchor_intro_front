@@ -1,5 +1,5 @@
 {
-    "address": "8hkDLDXHJpXwEufzpUtWp5WhgVBvfoywcXApnpDXTEk2",
+    "address": "DQRdzv6NdrUEGWvMfbiqXDvFQSQ9kEnW76w2cpk84BmV",
     "metadata": {
       "name": "anchor_student_intro",
       "version": "0.1.0",
@@ -7,6 +7,126 @@
       "description": "Created with Anchor"
     },
     "instructions": [
+      {
+        "name": "add_comment_to_intro",
+        "discriminator": [
+          4,
+          240,
+          139,
+          190,
+          189,
+          157,
+          153,
+          135
+        ],
+        "accounts": [
+          {
+            "name": "comment_account",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "commenter"
+                },
+                {
+                  "kind": "account",
+                  "path": "intro"
+                }
+              ]
+            }
+          },
+          {
+            "name": "intro",
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "account",
+                  "path": "intro.name",
+                  "account": "IntroState"
+                },
+                {
+                  "kind": "account",
+                  "path": "intro.initializer",
+                  "account": "IntroState"
+                }
+              ]
+            }
+          },
+          {
+            "name": "commenter",
+            "writable": true,
+            "signer": true
+          },
+          {
+            "name": "system_program",
+            "address": "11111111111111111111111111111111"
+          },
+          {
+            "name": "comment_counter",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    99,
+                    111,
+                    117,
+                    110,
+                    116,
+                    101,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "intro"
+                }
+              ]
+            }
+          },
+          {
+            "name": "token_program",
+            "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+          },
+          {
+            "name": "associated_token_program",
+            "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          },
+          {
+            "name": "rent",
+            "address": "SysvarRent111111111111111111111111111111111"
+          },
+          {
+            "name": "reward_mint",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    109,
+                    105,
+                    110,
+                    116
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "token_account",
+            "writable": true
+          }
+        ],
+        "args": [
+          {
+            "name": "comment",
+            "type": "string"
+          }
+        ]
+      },
       {
         "name": "add_student_intro",
         "discriminator": [
@@ -77,6 +197,30 @@
           {
             "name": "rent",
             "address": "SysvarRent111111111111111111111111111111111"
+          },
+          {
+            "name": "comment_counter",
+            "writable": true,
+            "pda": {
+              "seeds": [
+                {
+                  "kind": "const",
+                  "value": [
+                    99,
+                    111,
+                    117,
+                    110,
+                    116,
+                    101,
+                    114
+                  ]
+                },
+                {
+                  "kind": "account",
+                  "path": "intro"
+                }
+              ]
+            }
           }
         ],
         "args": [
@@ -235,6 +379,32 @@
     ],
     "accounts": [
       {
+        "name": "CommentCounterState",
+        "discriminator": [
+          123,
+          33,
+          228,
+          234,
+          179,
+          82,
+          151,
+          239
+        ]
+      },
+      {
+        "name": "IntroCommentState",
+        "discriminator": [
+          183,
+          60,
+          2,
+          76,
+          219,
+          177,
+          224,
+          232
+        ]
+      },
+      {
         "name": "IntroState",
         "discriminator": [
           128,
@@ -261,6 +431,42 @@
       }
     ],
     "types": [
+      {
+        "name": "CommentCounterState",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "intro_account",
+              "type": "pubkey"
+            },
+            {
+              "name": "count",
+              "type": "u32"
+            }
+          ]
+        }
+      },
+      {
+        "name": "IntroCommentState",
+        "type": {
+          "kind": "struct",
+          "fields": [
+            {
+              "name": "intro",
+              "type": "pubkey"
+            },
+            {
+              "name": "commenter",
+              "type": "pubkey"
+            },
+            {
+              "name": "comment",
+              "type": "string"
+            }
+          ]
+        }
+      },
       {
         "name": "IntroState",
         "type": {
